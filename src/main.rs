@@ -4,7 +4,7 @@
 //! 没有 TLS 栈、没有任何第三方依赖。
 //!
 //! 用法：
-//!   vless [config.json]
+//!   bare [config.json]
 
 mod base64;
 mod config;
@@ -12,7 +12,7 @@ mod dial;
 mod json;
 mod relay;
 mod sha1;
-mod vless;
+mod bare;
 mod ws;
 
 use std::io;
@@ -74,26 +74,26 @@ fn main() {
 fn serve(stream: TcpStream, cfg: &config::Config) -> io::Result<()> {
     let (mut reader, mut writer) = ws::accept(stream, &cfg.ws_path)?;
 
-    let req = vless::read_request(&mut reader)?;
+    let req = bare::read_request(&mut reader)?;
 
     if !cfg.uuids.iter().any(|u| *u == req.uuid) {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
-            format!("vless: unknown uuid {}", vless::uuid_hex(&req.uuid)),
+            format!("bare: unknown uuid {}", bare::uuid_hex(&req.uuid)),
         ));
     }
-    if req.command != vless::CMD_TCP {
+    if req.command != bare::CMD_TCP {
         return Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            format!("vless: unsupported command {}", req.command),
+            format!("bare: unsupported command {}", req.command),
         ));
     }
 
-    let target = vless::target(&req.addr, req.port);
+    let target = bare::target(&req.addr, req.port);
     let up = dial::connect(&target, cfg.prefer_v6)?;
 
     // 连接成功后才回响应头，失败时让客户端直接看到断开
-    writer.send_small(&vless::RESPONSE)?;
+    writer.send_small(&bare::RESPONSE)?;
 
     relay::run(reader, writer, up)
 }

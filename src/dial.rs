@@ -7,7 +7,7 @@ use std::io;
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
-use crate::vless::Target;
+use crate::bare::Target;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 

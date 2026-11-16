@@ -1,4 +1,4 @@
-# vless
+# bare
 
 单目标 VLESS + WebSocket 服务端，用 Rust 重写，**零第三方依赖**。
 
@@ -6,7 +6,7 @@
 
 ## 数字
 
-| | Go 版 vm2 (VMess) | **vless (Rust)** |
+| | Go 版 vm2 (VMess) | **bare (Rust)** |
 |---|---|---|
 | 二进制（静态 musl） | 2.59 MB | **521 KB** |
 | 常驻内存 | 7 MB | **0.5 MB** |
@@ -81,14 +81,14 @@ unless the server address is a private IP or domain
 cargo build --release --target x86_64-unknown-linux-musl
 ```
 
-产物在 `target/x86_64-unknown-linux-musl/release/vless`，纯静态、无 libc 依赖。
+产物在 `target/x86_64-unknown-linux-musl/release/bare`，纯静态、无 libc 依赖。
 
 `Cargo.toml` 里的 release profile 已配好：`opt-level = 3`、`lto = true`、`codegen-units = 1`、`panic = "abort"`、`strip = true`。其中 `opt-level` 在 3 和 "z" 之间只差 16 KB，但 3 的吞吐高约 9%。
 
 ## 运行
 
 ```bash
-./vless config.json     # 省略参数则读当前目录的 config.json
+./bare config.json     # 省略参数则读当前目录的 config.json
 ```
 
 ## 兼容性

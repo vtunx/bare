@@ -46,7 +46,7 @@ pub fn read_request<R: Read>(rd: &mut R) -> io::Result<Request> {
 
     let version = head[0];
     if version != 0 {
-        return bad("vless: unsupported version");
+        return bad("bare: unsupported version");
     }
     let mut uuid = [0u8; 16];
     uuid.copy_from_slice(&head[1..17]);
@@ -76,13 +76,13 @@ pub fn read_request<R: Read>(rd: &mut R) -> io::Result<Request> {
             rd.read_exact(&mut l)?;
             let n = l[0] as usize;
             if n == 0 {
-                return bad("vless: empty domain");
+                return bad("bare: empty domain");
             }
             let mut d = vec![0u8; n];
             rd.read_exact(&mut d)?;
             match String::from_utf8(d) {
                 Ok(s) => Addr::Domain(s),
-                Err(_) => return bad("vless: bad domain"),
+                Err(_) => return bad("bare: bad domain"),
             }
         }
         3 => {
@@ -90,7 +90,7 @@ pub fn read_request<R: Read>(rd: &mut R) -> io::Result<Request> {
             rd.read_exact(&mut b)?;
             Addr::V6(Ipv6Addr::from(b))
         }
-        _ => return bad("vless: unknown address type"),
+        _ => return bad("bare: unknown address type"),
     };
 
     Ok(Request {

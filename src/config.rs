@@ -12,7 +12,7 @@
 //! 其余字段静默忽略。
 
 use crate::json;
-use crate::vless::parse_uuid;
+use crate::bare::parse_uuid;
 
 #[derive(Clone)]
 pub struct Config {
@@ -81,7 +81,7 @@ pub fn load(path: &str) -> Result<Config, String> {
     }
 
     if !found {
-        return Err("config: no vless inbound".to_string());
+        return Err("config: no inbound".to_string());
     }
     if cfg.port == 0 {
         return Err("config: missing listen_port".to_string());

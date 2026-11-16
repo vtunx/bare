@@ -1,12 +1,12 @@
 [package]
-name = "vless"
+name = "bare"
 version = "0.1.0"
 edition = "2021"
 description = "Minimal VLESS + WebSocket server, single target, zero dependencies"
 license = "MIT"
 
 [[bin]]
-name = "vless"
+name = "bare"
 path = "src/main.rs"
 
 [dependencies]
