@@ -4,6 +4,8 @@
 
 > **bare 不提供链路加密**，UUID 是唯一凭据。生产环境请用外部 TLS，不要把示例 UUID 当密钥。
 
+想要一键部署（脚本 / Docker 镜像 / 可选 Cloudflare Tunnel），见 **[bare-node](https://github.com/cleeate/bare-node)**。本仓库只提供 bare 本体。
+
 ## 快速开始
 
 需要 Rust 工具链：
