@@ -9,7 +9,7 @@
       "server": "127.0.0.1",
       "server_port": 28444,
       "uuid": "00000000-0000-4000-8000-000000000001",
-      "transport": { "type": "ws", "path": "/vl" }
+      "transport": { "type": "ws" }
     }
   ]
 }

@@ -47,7 +47,7 @@ fn main() {
         }
     };
 
-    println!("listening on {} (ws path={:?})", addr, cfg.ws_path);
+    println!("listening on {}", addr);
 
     for incoming in ln.incoming() {
         match incoming {
@@ -69,7 +69,7 @@ fn main() {
 }
 
 fn serve(stream: TcpStream, cfg: &config::Config) -> io::Result<()> {
-    let (mut reader, mut writer) = ws::accept(stream, &cfg.ws_path)?;
+    let (mut reader, mut writer) = ws::accept(stream)?;
 
     let req = bare::read_request(&mut reader)?;
 

@@ -5,7 +5,6 @@
 //!   inbounds[].listen
 //!   inbounds[].listen_port
 //!   inbounds[].users[].id
-//!   inbounds[].transport.path
 //!   outbounds[].type          "direct"
 //!
 //! 其余字段静默忽略。
@@ -18,7 +17,6 @@ pub struct Config {
     pub listen: String,
     pub port: u16,
     pub uuids: Vec<[u8; 16]>,
-    pub ws_path: String,
 }
 
 pub fn load(path: &str) -> Result<Config, String> {
@@ -29,7 +27,6 @@ pub fn load(path: &str) -> Result<Config, String> {
         listen: "::".to_string(),
         port: 0,
         uuids: Vec::new(),
-        ws_path: String::new(),
     };
 
     let inbounds = root
@@ -61,13 +58,6 @@ pub fn load(path: &str) -> Result<Config, String> {
                         Some(u8v) => cfg.uuids.push(u8v),
                         None => return Err(format!("config: bad uuid '{}'", s)),
                     }
-                }
-            }
-        }
-        if let Some(tr) = ib.get("transport") {
-            if tr.get("type").and_then(|v| v.as_str()) == Some("ws") {
-                if let Some(p) = tr.get("path").and_then(|v| v.as_str()) {
-                    cfg.ws_path = p.to_string();
                 }
             }
         }

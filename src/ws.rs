@@ -345,7 +345,7 @@ fn header_value<'a>(lines: &[&'a str], name: &str) -> Option<&'a str> {
 }
 
 /// 完成 HTTP 升级握手，返回拆分好的读写端。
-pub fn accept(stream: TcpStream, path: &str) -> io::Result<(WsReader, WsWriter)> {
+pub fn accept(stream: TcpStream) -> io::Result<(WsReader, WsWriter)> {
     stream.set_nodelay(true)?;
     stream.set_read_timeout(Some(Duration::from_secs(20)))?;
 
@@ -382,13 +382,6 @@ pub fn accept(stream: TcpStream, path: &str) -> io::Result<(WsReader, WsWriter)>
     if parts.len() < 2 || parts[0] != "GET" {
         let _ = reader_side.write_all(b"HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
         return err("http: not a GET");
-    }
-
-    // 路径比较忽略查询串（客户端可能加 ?ed=2048 之类的 early data 参数）
-    let req_path = parts[1].split('?').next().unwrap_or("");
-    if !path.is_empty() && req_path != path {
-        let _ = reader_side.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n");
-        return err("http: bad path");
     }
 
     let rest: Vec<&str> = lines.collect();

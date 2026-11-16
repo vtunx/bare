@@ -26,7 +26,6 @@ cat /proc/sys/kernel/random/uuid   # 生成并替换 config.json 里的示例 UU
 
 - `listen` / `listen_port`：监听地址与端口（地址省略时为 `::`）。
 - `users[].id`：UUID，支持多个用户。
-- `transport.type` 为 `ws`；`transport.path` 是 WS 路径，留空则不限制。
 
 只取第一个匹配的入站（`type: vless`）；出站始终直连，无可配置字段（含 `domain_strategy`）——IP 版本与地址顺序交给系统 getaddrinfo，多地址会依次尝试。其余字段（含 `log.disabled`）被忽略。
 
@@ -50,7 +49,7 @@ bare 不含 TLS，由反向代理或隧道提供。临时测试可用 Cloudflare
 cloudflared tunnel --url http://127.0.0.1:28444
 ```
 
-用输出的域名作客户端地址，端口 443，开 TLS，SNI 与 WS Host 填该域名，路径 `/vl`。隧道域名随重启变化，免费档条款禁止大流量代理。入口能读流量，入口到 bare 的链路要放在可信环境。
+用输出的域名作客户端地址，端口 443，开 TLS，SNI 与 WS Host 填该域名。服务端不校验 WS 路径，客户端用任意路径均可。隧道域名随重启变化，免费档条款禁止大流量代理。入口能读流量，入口到 bare 的链路要放在可信环境。
 
 ## Linux 静态构建
 
