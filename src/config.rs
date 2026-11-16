@@ -1,10 +1,10 @@
 //! 启动配置。兼容 sing-box 的配置子集，方便直接复用现有 JSON。
 //!
 //! 读这几个字段就够：
-//!   inbounds[].type           "vless"（也接受 "vmess"，为了复用旧文件）
+//!   inbounds[].type           "vless"
 //!   inbounds[].listen
 //!   inbounds[].listen_port
-//!   inbounds[].users[].id     （也接受 .uuid）
+//!   inbounds[].users[].id
 //!   inbounds[].transport.path
 //!   outbounds[].type          "direct"
 //!
@@ -40,7 +40,7 @@ pub fn load(path: &str) -> Result<Config, String> {
     let mut found = false;
     for ib in inbounds {
         let kind = ib.get("type").and_then(|v| v.as_str()).unwrap_or("");
-        if kind != "vless" && kind != "vmess" {
+        if kind != "vless" {
             continue;
         }
         found = true;
@@ -55,10 +55,7 @@ pub fn load(path: &str) -> Result<Config, String> {
         }
         if let Some(users) = ib.get("users").and_then(|v| v.as_arr()) {
             for u in users {
-                let id = u
-                    .get("id")
-                    .and_then(|v| v.as_str())
-                    .or_else(|| u.get("uuid").and_then(|v| v.as_str()));
+                let id = u.get("id").and_then(|v| v.as_str());
                 if let Some(s) = id {
                     match parse_uuid(s) {
                         Some(u8v) => cfg.uuids.push(u8v),

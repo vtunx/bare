@@ -25,10 +25,10 @@ cat /proc/sys/kernel/random/uuid   # 生成并替换 config.json 里的示例 UU
 完整示例见 [examples/server.json](examples/server.json)，兼容 sing-box 配置的少量字段：
 
 - `listen` / `listen_port`：监听地址与端口（地址省略时为 `::`）。
-- `users[].id`：UUID，也接受 `users[].uuid`，支持多个用户。
+- `users[].id`：UUID，支持多个用户。
 - `transport.type` 为 `ws`；`transport.path` 是 WS 路径，留空则不限制。
 
-只取第一个匹配的入站；出站始终直连，无可配置字段（含 `domain_strategy`）——IP 版本与地址顺序交给系统 getaddrinfo，多地址会依次尝试。其余字段（含 `log.disabled`）被忽略；也接受入站 `type: vmess`，但协议始终是 VLESS。
+只取第一个匹配的入站（`type: vless`）；出站始终直连，无可配置字段（含 `domain_strategy`）——IP 版本与地址顺序交给系统 getaddrinfo，多地址会依次尝试。其余字段（含 `log.disabled`）被忽略。
 
 ## 客户端
 
