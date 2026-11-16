@@ -1,114 +1,115 @@
 # bare
 
-单目标 VLESS + WebSocket 服务端，用 Rust 重写，**零第三方依赖**。
+一个只做 **VLESS over WebSocket → TCP 直连出站** 的 Rust 服务端。零第三方依赖，不包含规则引擎、异步运行时或 TLS 栈。
 
-只做一件事：VLESS 入站 → direct 出站。没有规则引擎、没有 DNS 模块、没有 TLS 栈、没有 async 运行时。
+适合需要小二进制、功能范围固定，并由外部组件处理 TLS 的部署。**bare 不提供链路加密；不要把示例 UUID 当成密钥使用。**
 
-## 数字
+## 快速开始
 
-| | Go 版 vm2 (VMess) | **bare (Rust)** |
-|---|---|---|
-| 二进制（静态 musl） | 2.59 MB | **521 KB** |
-| 常驻内存 | 7 MB | **0.5 MB** |
-| 第三方依赖 | 0 | **0** |
-| 吞吐（同客户端、同环回） | 255–295 MB/s | **480–530 MB/s** |
+需要 Rust 工具链和本机链接器：
 
-环回直连天花板 855 MB/s，所以代理跑在直连的 50% 左右——这是用户态代理的正常水平，因为每个字节要跨两次内核边界，而 WebSocket 必须重新分帧，`splice`/`sendfile` 这类零拷贝全都用不了。
-
-## 为什么这么小
-
-Rust 没有 GC 运行时，标准库静态链接后下限只有 200–300 KB。剩下的全是有用代码：
-
-- `ws.rs` —— RFC 6455 子集：握手、帧编解码、分片重组、ping/pong/close
-- `vless.rs` —— VLESS 头解析，60 行左右的字节搬运
-- `sha1.rs` / `base64.rs` —— 手写，只为握手算 `Sec-WebSocket-Accept`
-- `json.rs` —— 手写解析器，只为读启动配置
-- `relay.rs` / `dial.rs` —— 双向搬运与出站连接
-
-VLESS 本身协议极简：没有 KDF、没有 AEAD 头认证、没有分块、没有 padding、没有掩码。对比之下，同一个作者写的 VMess 版本要多 900 行代码，多 2 MB 体积。
-
-## 必须知道的限制
-
-**Xray 内核拒绝 VLESS + 无 TLS + 公网地址。**
-
-Xray 在配置校验阶段就会报错：
-
-```
-vless without TLS or other encryption is prohibited
-unless the server address is a private IP or domain
+```sh
+git clone https://github.com/cleeate/bare.git
+cd bare
+cargo build --release --locked
+cp examples/server.json config.json
 ```
 
-源码里 `requiresTransportSecurity()` 把公网 IP 和公网域名都判为不安全地址。所以 **v2rayN 默认的 Xray 内核无法使用本服务端**，除非给它配 TLS。
+生成自己的 UUID，替换 `config.json` 中的示例值：
 
-可用的客户端是 sing-box 内核（已实测通过）：
+```sh
+# Linux
+cat /proc/sys/kernel/random/uuid
+./target/release/bare config.json
+```
 
-- v2rayN 7.x：设置 → 核心类型 → `sing-box`
-- Hiddify、NekoBox、sing-box 官方 GUI
-
-## 安全提醒
-
-**VLESS 本身不加密，UUID 是明文传输的。**
-
-16 字节 UUID 固定出现在连接开头的偏移 1–17 上，任何能看到流量的人都能直接读出来，然后拿去用你的服务器。这一点比 VMess 差——VMess 即便 `security: none`，UUID 也藏在加密的 authID 里。
-
-所以本服务的定位只能是「可信链路上的极简管道」。真要加密，别在应用层做 TLS，直接在网络层铺 WireGuard——内核实现的加密几乎不耗 CPU，而 TLS 会给二进制加 1.5 MB 以上，把体积优势全赔回去。
+省略配置路径时，默认读取当前目录的 `config.json`。示例默认监听 `127.0.0.1:28444`，供本地客户端或反向代理访问。需要直接对外监听时，自行改成 `0.0.0.0` 或 `::`，并配置防火墙。
 
 ## 配置
 
-兼容 sing-box 配置子集，可直接复用现有 JSON：
+完整示例见 [examples/server.json](examples/server.json)。兼容 sing-box 配置中的少量字段，并不实现 sing-box 的全部配置语义。
 
-```json
-{
-  "log": { "disabled": true },
-  "inbounds": [
-    {
-      "type": "vless",
-      "listen": "::",
-      "listen_port": 28444,
-      "users": [{ "id": "0a6d8fef-de3c-48b4-afec-713af83f5227" }],
-      "transport": { "type": "ws", "path": "/vl" }
-    }
-  ],
-  "outbounds": [{ "type": "direct", "domain_strategy": "prefer_ipv6" }]
-}
+- `inbounds`：使用第一个匹配的入站。
+- `listen`：监听地址，省略时为 `::`。
+- `listen_port`：监听端口。
+- `users[].id`：UUID，也接受 `users[].uuid`，支持多个用户。
+- `transport.type`：使用 `ws`；`transport.path` 是 WebSocket 路径，省略或为空时不限制路径。
+- `outbounds` 中 direct 的 `domain_strategy: prefer_ipv6`：优先选解析结果中的 IPv6；其他值优先选 IPv4。
+
+当前实现只选择一个解析地址，**连接失败后不会继续尝试其他地址**。其他配置字段通常被忽略，包括 `log.disabled`，它不能用来关闭日志。历史兼容逻辑也接受入站 `type: vmess`，但线上协议始终是 VLESS，示例请统一使用 `vless`。
+
+## 客户端
+
+本地明文连接示例见 [examples/client-singbox.json](examples/client-singbox.json)。先替换 UUID，使其与服务端一致：
+
+```sh
+sing-box run -c examples/client-singbox.json
+curl --proxy socks5h://127.0.0.1:1080 https://www.cloudflare.com/cdn-cgi/trace
 ```
 
-支持的字段就这些：`listen`、`listen_port`、`users[].id`（也接受 `uuid`）、`transport.path`、`domain_strategy`（`prefer_ipv6` / `prefer_ipv4` / 其他等同系统默认）。其余字段静默忽略。
+远程部署时，客户端的地址、端口、UUID 和 WebSocket 路径必须与实际入口一致。
 
-## 构建
+已验证的客户端行为：
 
-```bash
-cargo build --release --target x86_64-unknown-linux-musl
+- sing-box 1.14.4：可使用明文 WS。
+- Xray 26.11.9：拒绝“公网地址 + VLESS + 无 TLS”的配置；回环地址可用于本地测试。这个结论针对该版本，不代表所有历史或未来版本。
+- Xray 与 sing-box：通过外部 TLS 入口连接 bare 均已验证。客户端设置 TLS，bare 仍接收本地明文 WS。
+
+## 外部 TLS 与临时隧道
+
+典型连接方式：
+
+```text
+客户端 ── WSS/TLS ── TLS 入口 ── WS ── bare ── TCP ── 目标
 ```
 
-产物在 `target/x86_64-unknown-linux-musl/release/bare`，纯静态、无 libc 依赖。
+TLS 可由反向代理或隧道入口提供，无需编入 bare。以 Cloudflare Quick Tunnel 为临时测试示例：
 
-`Cargo.toml` 里的 release profile 已配好：`opt-level = 3`、`lto = true`、`codegen-units = 1`、`panic = "abort"`、`strip = true`。其中 `opt-level` 在 3 和 "z" 之间只差 16 KB，但 3 的吞吐高约 9%。
-
-## 运行
-
-```bash
-./bare config.json     # 省略参数则读当前目录的 config.json
+```sh
+cloudflared tunnel --url http://127.0.0.1:28444
 ```
 
-## 兼容性
+使用命令输出的域名作为客户端地址，端口 `443`，开启 TLS；SNI 和 WebSocket Host 填该域名，路径保持 `/vl`。不要跳过证书验证。Quick Tunnel 没有可用性保证，重建隧道通常会更换域名；使用时应自行确认服务商条款。
 
-已用真实客户端内核端到端验证：
+这类 TLS 入口保护客户端到入口的连接；入口能够读取流量，入口到 bare 的链路仍须放在可信环境中。
 
-- sing-box 1.14.4，VLESS + WS，经公网 IP 与 127.0.0.1 双向验证
-- `prefer_ipv6` 正确生效，域名解析优先取 IPv6
-- 4 MB / 32 MB / 256 MB 单流逐字节一致，8 路并发正常
-- 多站点访问（GitHub、Google、Cloudflare）
+## Linux 静态构建
 
-**不支持**：TLS、UDP 转发、VMess/mux、alterId 旧协议。
+以 Debian/Ubuntu 的 x86-64 musl 目标为例，在已安装 rustup 的前提下：
 
-## 已知取舍
+```sh
+sudo apt-get install musl-tools
+rustup target add x86_64-unknown-linux-musl
+cargo build --release --locked --target x86_64-unknown-linux-musl
+```
 
-- UDP 未实现（VLESS 的 UDP 走独立帧格式，本场景用不上）
-- 只支持一个入站、一个 direct 出站
-- 不校验 `Sec-WebSocket-Protocol`、不做 `max_early_data`
-- 每连接两个线程（读、写各一），阻塞 IO。几百连接量级完全够用；不引入 async 运行时正是体积优势的来源
+产物：`target/x86_64-unknown-linux-musl/release/bare`。musl 是静态链接的 C 运行库；产物无需系统提供动态 libc。其他 CPU 架构需要对应目标和交叉链接器，未在这里验证。
+
+release profile 使用 `opt-level = 3`、LTO、单 codegen unit、`panic = "abort"` 和 strip。没有 Cargo 第三方依赖。
+
+## 测量与验证
+
+开发时在一台 Linux x86-64 主机上记录过：
+
+- 静态 musl 产物：533,288 字节（约 521 KiB）。
+- 一次测试结束后的 RSS：500 kB。此值不代表高并发内存上限。
+- sing-box 客户端、256 MiB 环回下载：两次约 482 和 530 MiB/s。
+- 32 MiB 文件与直连 MD5 相同，8 路并发 HTTP 请求全部成功。
+- 外部 TLS 隧道：Xray 与 sing-box 均能访问，32 MiB 文件完整性检查通过。
+
+这些是特定环境的观测值，不是性能保证。吞吐受客户端内核、CPU、源服务器和链路影响；不同内核、不同测试轮次的数字不应当作严格对照实验。仓库暂未提供可复现的完整基准套件，也没有自动化协议回归测试。
+
+## 范围与限制
+
+- 仅支持 TCP；不支持 UDP、mux、Vision、TLS 或 WebSocket early data。
+- 只使用一个入站，出站始终直连；没有路由规则或 DNS 策略引擎。
+- 阻塞 I/O，每连接使用两个线程；尚无连接数限制或高并发资源保证。
+- WebSocket 实现是 RFC 6455 子集，包含握手、二进制帧、分片和控制帧处理，未经过完整协议一致性测试。
+- VLESS UUID 是凭据，不是加密。明文连接上的 UUID 和数据都可能被读取；WebSocket masking 也不是加密。
+- 手写 JSON、SHA-1、Base64 和协议解析器，尚未经独立安全审计。SHA-1 只用于 WebSocket 握手，不提供内容安全保护。
+
+模块位于 `src/`：`bare.rs` 解析 VLESS 请求，`ws.rs` 处理 WebSocket，`relay.rs` 搬运数据，`dial.rs` 建立出站，`config.rs` 和 `json.rs` 读取配置。
 
 ## License
 
-MIT
+[MIT](LICENSE)

@@ -1,0 +1,12 @@
+{
+  "inbounds": [
+    {
+      "type": "vless",
+      "listen": "127.0.0.1",
+      "listen_port": 28444,
+      "users": [{ "id": "00000000-0000-4000-8000-000000000001" }],
+      "transport": { "type": "ws", "path": "/vl" }
+    }
+  ],
+  "outbounds": [{ "type": "direct", "domain_strategy": "prefer_ipv4" }]
+}
