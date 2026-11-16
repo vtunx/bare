@@ -1,46 +1,19 @@
 //! 出站连接：把 VLESS 解出的目标地址连上去。
 //!
-//! `prefer_ipv6` 的语义与 sing-box 的 direct 出站一致：
-//! 系统解析出多个地址时，优先用 IPv6，没有 IPv6 再退回 IPv4。
+//! IP 版本与地址顺序完全交给系统（getaddrinfo）处理：bare 不做 DNS 策略，
+//! 也不自己筛选 IPv4/IPv6。系统按 RFC 3484 / gai.conf 排序地址，
+//! TcpStream::connect 会依次尝试直到连接成功。
 
 use std::io;
-use std::net::{TcpStream, ToSocketAddrs};
-use std::time::Duration;
+use std::net::TcpStream;
 
 use crate::bare::Target;
 
-const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
-
-pub fn connect(target: &Target, prefer_v6: bool) -> io::Result<TcpStream> {
+pub fn connect(target: &Target) -> io::Result<TcpStream> {
     let stream = match target {
-        Target::Ip(addr) => TcpStream::connect_timeout(addr, CONNECT_TIMEOUT)?,
-        Target::Domain(host, port) => {
-            let addrs: Vec<_> = (host.as_str(), *port).to_socket_addrs()?.collect();
-            if addrs.is_empty() {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    "dial: no address resolved",
-                ));
-            }
-            let pick = if prefer_v6 {
-                addrs
-                    .iter()
-                    .find(|a| a.is_ipv6())
-                    .or_else(|| addrs.iter().find(|a| a.is_ipv4()))
-            } else {
-                addrs
-                    .iter()
-                    .find(|a| a.is_ipv4())
-                    .or_else(|| addrs.iter().find(|a| a.is_ipv6()))
-            }
-            .or_else(|| addrs.first())
-            .copied()
-            .unwrap();
-
-            TcpStream::connect_timeout(&pick, CONNECT_TIMEOUT)?
-        }
+        Target::Ip(addr) => TcpStream::connect(addr)?,
+        Target::Domain(host, port) => TcpStream::connect((host.as_str(), *port))?,
     };
-
     stream.set_nodelay(true)?;
     Ok(stream)
 }

@@ -7,7 +7,6 @@
 //!   inbounds[].users[].id     （也接受 .uuid）
 //!   inbounds[].transport.path
 //!   outbounds[].type          "direct"
-//!   outbounds[].domain_strategy
 //!
 //! 其余字段静默忽略。
 
@@ -20,7 +19,6 @@ pub struct Config {
     pub port: u16,
     pub uuids: Vec<[u8; 16]>,
     pub ws_path: String,
-    pub prefer_v6: bool,
 }
 
 pub fn load(path: &str) -> Result<Config, String> {
@@ -32,7 +30,6 @@ pub fn load(path: &str) -> Result<Config, String> {
         port: 0,
         uuids: Vec::new(),
         ws_path: String::new(),
-        prefer_v6: false,
     };
 
     let inbounds = root
@@ -88,16 +85,6 @@ pub fn load(path: &str) -> Result<Config, String> {
     }
     if cfg.uuids.is_empty() {
         return Err("config: missing uuid".to_string());
-    }
-
-    if let Some(obs) = root.get("outbounds").and_then(|v| v.as_arr()) {
-        for ob in obs {
-            if ob.get("type").and_then(|v| v.as_str()) == Some("direct") {
-                if ob.get("domain_strategy").and_then(|v| v.as_str()) == Some("prefer_ipv6") {
-                    cfg.prefer_v6 = true;
-                }
-            }
-        }
     }
 
     Ok(cfg)

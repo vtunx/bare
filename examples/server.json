@@ -7,6 +7,5 @@
       "users": [{ "id": "00000000-0000-4000-8000-000000000001" }],
       "transport": { "type": "ws", "path": "/vl" }
     }
-  ],
-  "outbounds": [{ "type": "direct", "domain_strategy": "prefer_ipv4" }]
+  ]
 }

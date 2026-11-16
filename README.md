@@ -34,9 +34,9 @@ cat /proc/sys/kernel/random/uuid
 - `listen_port`：监听端口。
 - `users[].id`：UUID，也接受 `users[].uuid`，支持多个用户。
 - `transport.type`：使用 `ws`；`transport.path` 是 WebSocket 路径，省略或为空时不限制路径。
-- `outbounds` 中 direct 的 `domain_strategy: prefer_ipv6`：优先选解析结果中的 IPv6；其他值优先选 IPv4。
+出站始终直连，没有可配置的出站字段（包括 `domain_strategy`）。IPv4 / IPv6 的选择与地址顺序完全交给系统（getaddrinfo / gai.conf）：系统按 RFC 3484 排序，`connect` 会依次尝试各地址，某个不可达时自动换下一个。
 
-当前实现只选择一个解析地址，**连接失败后不会继续尝试其他地址**。其他配置字段通常被忽略，包括 `log.disabled`，它不能用来关闭日志。历史兼容逻辑也接受入站 `type: vmess`，但线上协议始终是 VLESS，示例请统一使用 `vless`。
+其他配置字段通常被忽略，包括 `log.disabled`，它不能用来关闭日志。历史兼容逻辑也接受入站 `type: vmess`，但线上协议始终是 VLESS，示例请统一使用 `vless`。
 
 ## 客户端
 

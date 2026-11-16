@@ -47,10 +47,7 @@ fn main() {
         }
     };
 
-    println!(
-        "listening on {} (ws path={:?}, ipv6={})",
-        addr, cfg.ws_path, cfg.prefer_v6
-    );
+    println!("listening on {} (ws path={:?})", addr, cfg.ws_path);
 
     for incoming in ln.incoming() {
         match incoming {
@@ -90,7 +87,7 @@ fn serve(stream: TcpStream, cfg: &config::Config) -> io::Result<()> {
     }
 
     let target = bare::target(&req.addr, req.port);
-    let up = dial::connect(&target, cfg.prefer_v6)?;
+    let up = dial::connect(&target)?;
 
     // 连接成功后才回响应头，失败时让客户端直接看到断开
     writer.send_small(&bare::RESPONSE)?;
