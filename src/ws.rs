@@ -32,8 +32,8 @@ const OP_PONG: u8 = 0xA;
 
 /// 出站帧头的预留空间：最长头部是 2 + 8 字节。
 const HDR_MAX: usize = 10;
-/// 出站负载缓冲大小。
-const OUT_CAP: usize = 64 * 1024;
+/// 出站负载缓冲大小。32 KiB 在吞吐上与大缓冲无差异，但每连接省一半常驻内存。
+const OUT_CAP: usize = 32 * 1024;
 /// 入站原始字节缓冲大小。
 const IN_CAP: usize = 64 * 1024;
 

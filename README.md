@@ -104,8 +104,8 @@ release profile 使用 `opt-level = 3`、LTO、单 codegen unit、`panic = "abor
 
 开发时在一台 Linux x86-64 主机上记录过：
 
-- 静态 musl 产物：516,904 字节（约 505 KiB）。
-- 一次测试结束后的 RSS：500 kB。此值不代表高并发内存上限。
+- 静态 musl 产物：496,424 字节（约 485 KiB）。
+- 一次测试结束后的 RSS：500 kB。此值不代表高并发内存上限；每连接常驻缓冲约为出站 32 KiB + 入站转发 16 KiB（入站帧缓冲 64 KiB 仅在握手期使用），8 路并发实测增量约 300 kB。
 - sing-box 客户端、256 MiB 环回下载：两次约 482 和 530 MiB/s。
 - 32 MiB 文件与直连 MD5 相同，8 路并发 HTTP 请求全部成功。
 - 外部 TLS 隧道：Xray 与 sing-box 均能访问，32 MiB 文件完整性检查通过。

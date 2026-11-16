@@ -12,7 +12,7 @@ use std::thread;
 
 use crate::ws::{WsReader, WsWriter};
 
-const UP_BUF: usize = 32 * 1024;
+const UP_BUF: usize = 16 * 1024;
 
 pub fn run(mut reader: WsReader, mut writer: WsWriter, up: TcpStream) -> std::io::Result<()> {
     let mut up_read = up.try_clone()?;
