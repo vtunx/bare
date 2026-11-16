@@ -104,7 +104,7 @@ release profile 使用 `opt-level = 3`、LTO、单 codegen unit、`panic = "abor
 
 开发时在一台 Linux x86-64 主机上记录过：
 
-- 静态 musl 产物：533,288 字节（约 521 KiB）。
+- 静态 musl 产物：516,904 字节（约 505 KiB）。
 - 一次测试结束后的 RSS：500 kB。此值不代表高并发内存上限。
 - sing-box 客户端、256 MiB 环回下载：两次约 482 和 530 MiB/s。
 - 32 MiB 文件与直连 MD5 相同，8 路并发 HTTP 请求全部成功。

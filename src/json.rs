@@ -7,7 +7,7 @@ pub enum Json {
     Null,
     #[allow(dead_code)]
     Bool(bool),
-    Num(f64),
+    Num(u64),
     Str(String),
     Arr(Vec<Json>),
     Obj(Vec<(String, Json)>),
@@ -41,7 +41,7 @@ impl Json {
 
     pub fn as_usize(&self) -> Option<usize> {
         match self {
-            Json::Num(n) if *n >= 0.0 && *n <= u32::MAX as f64 => Some(*n as usize),
+            Json::Num(n) if *n <= u32::MAX as u64 => Some(*n as usize),
             _ => None,
         }
     }
@@ -274,7 +274,7 @@ impl<'a> Parser<'a> {
         }
         let s = std::str::from_utf8(&self.b[start..self.i])
             .map_err(|_| "json: bad number".to_string())?;
-        s.parse::<f64>()
+        s.parse::<u64>()
             .map(Json::Num)
             .map_err(|_| format!("json: bad number '{}'", s))
     }
