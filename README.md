@@ -94,8 +94,8 @@ release profile 使用 `opt-level = 3`、LTO、单 codegen unit、`panic = "abor
 1. 在 GitHub 仓库页面进入 **Actions → Release → Run workflow**。
 2. 在 **version** 输入版本号，例如 `0.2.0`，开头的 `v` 可省略，也支持 `0.2.0-rc.1` 这类后缀。
 3. workflow 在 `ubuntu-24.04` 上同时编译 `x86_64-unknown-linux-musl`（amd64）和 `aarch64-unknown-linux-musl`（arm64）两个目标，用 Rust 自带的 `rust-lld` 做自包含静态链接（无需外部交叉编译器），检查产物为静态链接且架构正确，再创建 tag `v<version>` 的 Release，上传：
-   - `bare-x86_64-linux-musl`
-   - `bare-aarch64-linux-musl`
+   - `bare-amd64-linux-musl`
+   - `bare-arm64-linux-musl`
    - `SHA256SUMS`（两个二进制的 sha256）
 
 该 workflow 仅由 `workflow_dispatch` 触发，不会因 push 或 tag 自动运行；需要 `contents: write` 权限，由 GitHub 自动提供。二进制与源码中的 Cargo 版本号不会自动同步，tag/release 版本号以输入值为准。
