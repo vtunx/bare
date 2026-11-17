@@ -77,9 +77,17 @@ cargo build --release --locked --target x86_64-unknown-linux-musl
 - 空闲 RSS 约 450 kB；8 路并发增量约 300 kB（每连接常驻 OUT 32 KiB + UP 16 KiB）。
 - sing-box 客户端、256 MiB 下载约 480–530 MiB/s；32 MiB 文件 md5 与直连一致，8 路并发全成功。
 
+## 排查
+
+**「连上了但打不开网页、提示找不到 DNS」**：多半是客户端把 DNS 查询（UDP/53）走了代理。bare 只处理 TCP，收到 UDP 请求会直接断开，客户端拿不到解析结果，于是所有访问一起失败。
+
+解决办法是让 DNS 不走代理：客户端开启「本地 DNS」，或把 DNS 指向直连出站。需要防污染就用 DoT / DoH，别用 UDP 53。
+
+同理，QUIC / HTTP3、游戏、BT 这类 UDP 流量也过不去。
+
 ## 范围与限制
 
-- 仅 TCP；无 UDP / mux / TLS / early data，无路由规则或 DNS 策略。
+- 仅 TCP；无 UDP / mux / TLS / early data，无路由规则或 DNS 策略。客户端若把 DNS 走代理会全部解析失败，见上方「排查」。
 - 阻塞 I/O，每连接两个线程，无连接数上限。
 - WS 为 RFC 6455 子集（握手、二进制帧、分片、控制帧），未经完整一致性测试。
 - UUID 是凭据不是加密，WS masking 也不是加密。
